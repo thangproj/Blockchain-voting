@@ -5,27 +5,28 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 // User
 import ConnectWallet from "./pages/ConnectWallet";
 import UserHome from "./pages/UserHome";
-import UserElectionList from "./pages/UserElectionList";
-import ElectionCandidates from "./pages/UserElectionCandidates";
-import CandidateDetail from "./pages/CandidateDetail";
+import UserActiveElectionList from "./pages/UserActiveElectionList.jsx";
+import UserVoteCandidates from "./pages/UserVoteCandidates.jsx";
+import UserCandidateDetail from "./pages/UserCandidateDetail.jsx";
 import CheckVoteStatus from "./pages/CheckVoteStatus";
+import UserElectionResults from "./pages/UserElectionResults.jsx";
+import UserVoteLog from "./pages/UserVoteLog.jsx";
 
 // Admin
 import AdminDashboard from "./pages/AdminDashboard";
-import CreateElection from "./pages/CreateElection";
-import EditCandidate from "./pages/EditCandidate";
-import AddCandidate from "./pages/AddCandidate";
-import DeactivateCandidate from "./pages/DeactivateCandidate";
-import AllCandidatesByElection from "./pages/AllCandidatesByElection";
-import ElectionStatusManager from "./pages/ElectionStatusManager";
-import EndElection from "./pages/EndElection";
-import ElectionList from "./pages/ElectionList";
-import VoteResults from "./pages/VoteResults";
-import VoteLog from "./pages/VoteLog";
-import ElectionWinner from "./pages/ElectionWinner";
+import AdminCreateElection from "./pages/AdminCreateElection.jsx";
+import AdminEditCandidate from "./pages/AdminEditCandidate.jsx";
+import AdminAddCandidate from "./pages/AdminAddCandidate.jsx";
 
-// Detail
-import ElectionDetail from "./pages/ElectionDetail";
+import AdminDeactivateCandidate from "./pages/AdminDeactivateCandidate.jsx";
+import AdminAllCandidatesByElection from "./pages/AdminAllCandidatesByElection.jsx";
+import AdminElectionStatusManager from "./pages/AdminElectionStatusManager.jsx";
+import AdminEndElection from "./pages/AdminEndElection.jsx";
+import AdminElectionList from "./pages/AdminElectionList.jsx";
+import AdminVoteResults from "./pages/AdminVoteResults.jsx";
+import AdminVoteLog from "./pages/AdminVoteLog.jsx";
+import AdminElectionWinner from "./pages/AdminElectionWinner.jsx";
+import AdminElectionDetail from "./pages/AdminElectionDetail.jsx";
 
 export default function App() {
   return (
@@ -34,29 +35,30 @@ export default function App() {
         {/* User Pages */}
         <Route path="/" element={<ConnectWallet />} />
         <Route path="/user-home" element={<UserHome />} />
-        <Route path="/user/elections" element={<UserElectionList />} />
-        <Route path="/user/election/:electionId" element={<ElectionDetail />} />
-        <Route path="/user/vote/:electionId" element={<ElectionCandidates />} />
-        <Route path="/user/vote/:electionId/candidate/:candidateId" element={<CandidateDetail />} />
+        <Route path="/user/vote-log" element={<UserVoteLog />} />
+        <Route path="/user/elections" element={<UserActiveElectionList />} />
+        <Route path="/user/election/:electionId" element={<AdminElectionDetail />} /> {/* Nếu muốn user xem chi tiết phải dùng UserElectionDetail nếu có, hoặc để admin xem */}
+        <Route path="/user/vote/:electionId" element={<UserVoteCandidates />} />
+        <Route path="/user/vote/:electionId/candidate/:candidateId" element={<UserCandidateDetail />} />
         <Route path="/user/my-votes" element={<CheckVoteStatus />} />
-
-
+        <Route path="/user/results" element={<UserElectionResults />} />
 
         {/* Admin Pages */}
         <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/elections" element={<ElectionList />} />
-        <Route path="/admin/create-election" element={<CreateElection />} />
-        <Route path="/admin/end-election" element={<EndElection />} />
-        <Route path="/admin/all-candidates" element={<AllCandidatesByElection />} />
-        <Route path="/admin/deactivate-candidate" element={<DeactivateCandidate />} />
-        <Route path="/admin/votes" element={<VoteResults />} />
-        <Route path="/admin/vote-log" element={<VoteLog />} />
-        <Route path="/admin/elections-winner" element={<ElectionWinner />} />
-        <Route path="/admin/manage-elections" element={<ElectionStatusManager />} />
-        <Route path="/admin/edit-candidate" element={<EditCandidate />} />
-        <Route path="/admin/add-candidate" element={<AddCandidate />} />
+        <Route path="/admin/elections" element={<AdminElectionList />} />
+        <Route path="/admin/create-election" element={<AdminCreateElection />} />
+        <Route path="/admin/end-election" element={<AdminEndElection />} />
+        <Route path="/admin/all-candidates" element={<AdminAllCandidatesByElection />} />
+        <Route path="/admin/deactivate-candidate" element={<AdminDeactivateCandidate />} />
+        <Route path="/admin/votes" element={<AdminVoteResults />} />
+        <Route path="/admin/vote-log" element={<AdminVoteLog />} />
+        <Route path="/admin/elections-winner" element={<AdminElectionWinner />} />
+        <Route path="/admin/manage-elections" element={<AdminElectionStatusManager />} />
+        <Route path="/admin/edit-candidate" element={<AdminEditCandidate />} />
+        <Route path="/admin/add-candidate" element={<AdminAddCandidate />} />
+        {/* Nếu admin muốn xem chi tiết kỳ bầu cử */}
+        <Route path="/admin/election/:electionId" element={<AdminElectionDetail />} />
       </Routes>
     </Router>
   );
 }
-

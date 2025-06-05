@@ -1,9 +1,12 @@
-// src/pages/AllCandidatesByElection.jsx
 import React, { useEffect, useState } from "react";
-import { ethers } from "ethers";
-import VotingInfo from "../contracts/VotingInfo.json";
+import { useCheckAdmin } from "../hooks/useCheckAdmin";
+import { useNavigate } from "react-router-dom";
+import { getContract } from "../ethers"; // Import hàm đã tạo
 
 export default function AllCandidatesByElection() {
+  const isAdmin = useCheckAdmin();
+  const navigate = useNavigate();
+
   const [elections, setElections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -13,8 +16,7 @@ export default function AllCandidatesByElection() {
       setLoading(true);
       setMessage("");
       try {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
+        const contract = getContract();
         const data = await contract.getAllElectionDetails();
         const results = [];
 
@@ -54,6 +56,14 @@ export default function AllCandidatesByElection() {
     }
     fetchAll();
   }, []);
+
+  useEffect(() => {
+    if (isAdmin === false) {
+      navigate("/");
+    }
+  }, [isAdmin, navigate]);
+
+  if (isAdmin === null) return <div>Đang kiểm tra quyền truy cập...</div>;
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-10">

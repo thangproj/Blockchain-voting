@@ -1,9 +1,12 @@
-// src/pages/DeactivateCandidate.jsx
 import React, { useEffect, useState } from "react";
-import { ethers } from "ethers";
-import VotingInfo from "../contracts/VotingInfo.json";
+import { getContract, getSigner } from "../ethers"; // Sử dụng ethers.js
+import { useCheckAdmin } from "../hooks/useCheckAdmin";
+import { useNavigate } from "react-router-dom";
 
 export default function DeactivateCandidate() {
+  const isAdmin = useCheckAdmin();
+  const navigate = useNavigate();
+
   const [elections, setElections] = useState([]);
   const [selectedElection, setSelectedElection] = useState("");
   const [candidates, setCandidates] = useState([]);
@@ -11,35 +14,40 @@ export default function DeactivateCandidate() {
   const [candidateActive, setCandidateActive] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
   const [currentAccount, setCurrentAccount] = useState("");
   const [adminAddr, setAdminAddr] = useState("");
 
-  // Kiểm tra admin khi tài khoản hoặc election thay đổi
+  // Kiểm tra quyền admin (dùng hook, không cần tự check provider nữa)
   useEffect(() => {
-    async function checkAdmin() {
-      if (!window.ethereum) return;
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      const signer = provider.getSigner();
-      const account = await signer.getAddress();
-      setCurrentAccount(account);
-
-      const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
-      const admin = await contract.admin();
-      setAdminAddr(admin);
-      setIsAdmin(account.toLowerCase() === admin.toLowerCase());
+    async function fetchAdminInfo() {
+      try {
+        const contract = getContract();
+        const provider = contract.provider;
+        const accounts = await provider.send("eth_requestAccounts", []);
+        setCurrentAccount(accounts[0]);
+        const admin = await contract.admin();
+        setAdminAddr(admin);
+      } catch {
+        setCurrentAccount("");
+        setAdminAddr("");
+      }
     }
-    checkAdmin();
-  }, [message, selectedElection, selectedCandidate]);
+    fetchAdminInfo();
+  }, []);
+
+  // Redirect nếu không phải admin
+  useEffect(() => {
+    if (isAdmin === false) {
+      navigate("/");
+    }
+  }, [isAdmin, navigate]);
 
   // Load all elections
   useEffect(() => {
     async function fetchElections() {
       setLoading(true);
       try {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
+        const contract = getContract();
         const data = await contract.getAllElectionDetails();
         const list = [];
         for (let i = 0; i < data[0].length; i++) {
@@ -65,14 +73,12 @@ export default function DeactivateCandidate() {
     async function fetchCandidates() {
       setLoading(true);
       try {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
+        const contract = getContract();
         const details = await contract.getElectionDetails(Number(selectedElection));
         const count = Number(details[4]);
         const list = [];
         for (let i = 0; i < count; i++) {
           const c = await contract.getCandidate(Number(selectedElection), i);
-          // Lấy trạng thái active ứng viên (index 6)
           list.push({ id: i, name: c[1], isActive: c[6] });
         }
         setCandidates(list);
@@ -82,6 +88,7 @@ export default function DeactivateCandidate() {
       setLoading(false);
     }
     fetchCandidates();
+    // eslint-disable-next-line
   }, [selectedElection, message]); // reload sau khi thay đổi trạng thái
 
   // Load active state when candidate is selected
@@ -103,15 +110,13 @@ export default function DeactivateCandidate() {
       }
       setLoading(true);
       setMessage("");
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
+      const contract = getContract(getSigner());
+      const provider = contract.provider;
       const { chainId } = await provider.getNetwork();
       if (chainId !== 11155111) {
         setLoading(false);
         return alert("❌ Vui lòng chuyển MetaMask sang mạng Sepolia.");
       }
-      const signer = provider.getSigner();
-      const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, signer);
       const tx = await contract.setCandidateActive(
         Number(selectedElection),
         Number(selectedCandidate),
@@ -124,6 +129,8 @@ export default function DeactivateCandidate() {
     }
     setLoading(false);
   };
+
+  if (isAdmin === null) return <div>Đang kiểm tra quyền truy cập...</div>;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">

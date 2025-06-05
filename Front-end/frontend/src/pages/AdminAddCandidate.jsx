@@ -1,16 +1,19 @@
-// src/pages/AddCandidate.jsx
 import React, { useEffect, useState } from "react";
-import { ethers } from "ethers";
-import VotingInfo from "../contracts/VotingInfo.json";
+import { useCheckAdmin } from "../hooks/useCheckAdmin";
+import { useNavigate } from "react-router-dom";
+import { getContract, getSigner } from "../ethers"; // <-- Import từ ethers.js
 
 export default function AddCandidate() {
+  const isAdmin = useCheckAdmin();
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
     name: "",
     bio: "",
     achievements: "",
     policies: "",
     image: "",
-    electionId: "" // Lưu electionId chọn được
+    electionId: ""
   });
   const [elections, setElections] = useState([]);
   const [message, setMessage] = useState("");
@@ -19,8 +22,7 @@ export default function AddCandidate() {
   // Load các kỳ bầu cử đang hoạt động
   const loadElections = async () => {
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
+      const contract = getContract();
       const data = await contract.getAllElectionDetails();
       const now = new Date();
 
@@ -30,24 +32,21 @@ export default function AddCandidate() {
         const endTime = new Date(Number(data[2][i]) * 1000);
         const isActive = data[3][i];
         if (startTime > now && isActive) {
-  // Kỳ sắp diễn ra (tương lai) và đang active
-  activeElections.push({
-    id: i,
-    title: data[0][i] + " (Sắp diễn ra)",
-    startTime,
-    endTime
-  });
-}
-    if (startTime <= now && endTime >= now && isActive) {
-      // Kỳ đang diễn ra
-      activeElections.push({
-        id: i,
-        title: data[0][i] + " (Đang diễn ra)",
-        startTime,
-        endTime
-      });
-    }
-
+          activeElections.push({
+            id: i,
+            title: data[0][i] + " (Sắp diễn ra)",
+            startTime,
+            endTime
+          });
+        }
+        if (startTime <= now && endTime >= now && isActive) {
+          activeElections.push({
+            id: i,
+            title: data[0][i] + " (Đang diễn ra)",
+            startTime,
+            endTime
+          });
+        }
       }
       setElections(activeElections);
     } catch (err) {
@@ -60,6 +59,12 @@ export default function AddCandidate() {
   useEffect(() => {
     loadElections();
   }, []);
+
+  useEffect(() => {
+    if (isAdmin === false) {
+      navigate("/");
+    }
+  }, [isAdmin, navigate]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -78,18 +83,14 @@ export default function AddCandidate() {
     try {
       if (!window.ethereum) return alert("Vui lòng cài MetaMask");
 
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
+      const contract = getContract(getSigner());
+      // Kiểm tra đúng mạng (nếu muốn kỹ hơn có thể import checkNetwork từ ethers.js)
+      const provider = contract.provider;
       const { chainId } = await provider.getNetwork();
       if (chainId !== 11155111) {
         return alert("❌ Vui lòng chuyển MetaMask sang mạng Sepolia.");
       }
-      const signer = provider.getSigner();
-      const contract = new ethers.Contract(
-        VotingInfo.address,
-        VotingInfo.abi,
-        signer
-      );
+
       const achievementsWithPolicies = `${form.achievements}\n\n--- Chính sách tranh cử ---\n${form.policies}`;
       const tx = await contract.addCandidate(
         Number(form.electionId),
@@ -114,6 +115,8 @@ export default function AddCandidate() {
       setMessage("❌ Thêm ứng viên thất bại. Có thể bạn không phải admin.");
     }
   };
+
+  if (isAdmin === null) return <div>Đang kiểm tra quyền truy cập...</div>;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">

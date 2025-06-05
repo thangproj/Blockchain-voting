@@ -54,6 +54,13 @@ export default function UserHome() {
             <FaChartBar className="text-2xl group-hover:scale-110 transition" />
             <span>Xem kết quả bầu cử sau khi kết thúc</span>
           </button>
+          <button
+            className="flex items-center gap-3 justify-center w-full py-4 rounded-xl bg-teal-500 hover:bg-teal-700 shadow-lg transition text-white text-lg font-semibold tracking-wide group"
+            onClick={() => navigate("/user/vote-log")}
+          >
+            <FaChartBar className="text-2xl group-hover:scale-110 transition" />
+            <span>Xem lịch sử bỏ phiếu</span>
+          </button>
         </div>
         <div className="text-xs text-gray-400 text-center mt-4">
           © {new Date().getFullYear()} Voting DApp | Bảo mật và minh bạch trên Blockchain

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ethers } from "ethers";
-import VotingInfo from "../contracts/VotingInfo.json";
+import { getContract, getSigner } from "../ethers";
 
 export default function CheckVoteStatus() {
   const [loading, setLoading] = useState(true);
@@ -19,13 +18,13 @@ export default function CheckVoteStatus() {
           setLoading(false);
           return;
         }
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        // Lấy account user hiện tại
+        const contract = getContract(getSigner());
+        const provider = contract.provider;
         await provider.send("eth_requestAccounts", []);
         const signer = provider.getSigner();
         const acc = await signer.getAddress();
         setAccount(acc);
-
-        const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
 
         // Lấy tất cả các kỳ bầu cử
         const data = await contract.getAllElectionDetails();
@@ -46,11 +45,9 @@ export default function CheckVoteStatus() {
         const result = [];
         for (let election of elections) {
           try {
-            // Gọi hàm contract: getVotedCandidateId(electionId, address)
-            // Nếu contract KHÔNG có hàm này, cần dùng event (VoteCast)
             let votedId = null;
             let votedAt = null;
-            // Cách 1: contract có hàm getVotedCandidateId (uint electionId, address user) returns (int)
+            // Nếu contract có hàm getVotedCandidateId
             if (contract.getVotedCandidateId) {
               votedId = await contract.getVotedCandidateId(election.id, acc);
               if (votedId < 0) votedId = null;

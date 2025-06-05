@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ethers } from "ethers";
-import VotingInfo from "../contracts/VotingInfo.json";
+import { getContract, getSigner } from "../ethers";
 
 export default function EndElection() {
   const [elections, setElections] = useState([]);
@@ -14,16 +13,21 @@ export default function EndElection() {
   useEffect(() => {
     async function checkAdmin() {
       if (!window.ethereum) return;
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      const signer = provider.getSigner();
-      const account = await signer.getAddress();
-      setCurrentAccount(account);
+      try {
+        const contract = getContract();
+        const provider = contract.provider;
+        const accounts = await provider.send("eth_requestAccounts", []);
+        const account = accounts[0];
+        setCurrentAccount(account);
 
-      const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
-      const admin = await contract.admin();
-      setAdminAddr(admin);
-      setIsAdmin(account.toLowerCase() === admin.toLowerCase());
+        const admin = await contract.admin();
+        setAdminAddr(admin);
+        setIsAdmin(account.toLowerCase() === admin.toLowerCase());
+      } catch {
+        setCurrentAccount("");
+        setAdminAddr("");
+        setIsAdmin(false);
+      }
     }
     checkAdmin();
   }, [message]);
@@ -33,9 +37,7 @@ export default function EndElection() {
     async function fetchElections() {
       setLoading(true);
       try {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
-
+        const contract = getContract();
         // Tránh gọi hàm nếu contract chưa deploy hoặc chưa có kỳ nào
         let count = 0;
         try {
@@ -53,8 +55,6 @@ export default function EndElection() {
 
         // Lấy danh sách kỳ bầu cử
         const data = await contract.getAllElectionDetails();
-
-        // Nếu contract chưa cập nhật trường ended, hãy bỏ dòng này (hoặc fix lại contract)
         const results = [];
         for (let i = 0; i < data[0].length; i++) {
           results.push({
@@ -63,7 +63,7 @@ export default function EndElection() {
             start: new Date(Number(data[1][i]) * 1000),
             end: new Date(Number(data[2][i]) * 1000),
             isActive: data[3][i],
-            isEnded: data[5] ? data[5][i] : !data[3][i], // Nếu có trường ended thì dùng, còn không thì fallback: !isActive coi như đã kết thúc
+            isEnded: data[5] ? data[5][i] : !data[3][i], // fallback nếu contract cũ
           });
         }
         setElections(results);
@@ -84,15 +84,13 @@ export default function EndElection() {
       }
       setLoading(true);
       setMessage("");
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
+      const contract = getContract(getSigner());
+      const provider = contract.provider;
       const { chainId } = await provider.getNetwork();
       if (chainId !== 11155111) {
         setLoading(false);
         return alert("❌ Vui lòng chuyển MetaMask sang mạng Sepolia.");
       }
-      const signer = provider.getSigner();
-      const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, signer);
       const tx = await contract.endElection(electionId);
       await tx.wait();
       setMessage("✅ Đã kết thúc kỳ bầu cử thành công!");

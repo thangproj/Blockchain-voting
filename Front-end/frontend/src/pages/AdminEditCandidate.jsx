@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ethers } from "ethers";
-import VotingInfo from "../contracts/VotingInfo.json";
+import { getContract, getSigner } from "../ethers"; // Sử dụng ethers.js
 
 export default function UpdateCandidate() {
   const [elections, setElections] = useState([]);
@@ -22,8 +21,7 @@ export default function UpdateCandidate() {
     async function fetchElections() {
       setLoading(true);
       try {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
+        const contract = getContract();
         const data = await contract.getAllElectionDetails();
         const list = [];
         for (let i = 0; i < data[0].length; i++) {
@@ -48,8 +46,7 @@ export default function UpdateCandidate() {
     async function fetchCandidates() {
       setLoading(true);
       try {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
+        const contract = getContract();
         const details = await contract.getElectionDetails(Number(selectedElection));
         const count = Number(details[4]);
         const list = [];
@@ -81,8 +78,7 @@ export default function UpdateCandidate() {
     async function fetchCandidate() {
       setLoading(true);
       try {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
+        const contract = getContract();
         const data = await contract.getCandidate(Number(selectedElection), Number(selectedCandidate));
         let [achievements, policies] = data[3].split("--- Chính sách tranh cử ---");
         policies = policies ? policies.trim() : "";
@@ -123,14 +119,12 @@ export default function UpdateCandidate() {
     }
     try {
       if (!window.ethereum) return alert("Vui lòng cài MetaMask");
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
+      const contract = getContract(getSigner());
+      const provider = contract.provider;
       const { chainId } = await provider.getNetwork();
       if (chainId !== 11155111) {
         return alert("❌ Vui lòng chuyển MetaMask sang mạng Sepolia.");
       }
-      const signer = provider.getSigner();
-      const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, signer);
       const achievementsWithPolicies = `${form.achievements}\n\n--- Chính sách tranh cử ---\n${form.policies}`;
       const tx = await contract.updateCandidate(
         Number(selectedElection),

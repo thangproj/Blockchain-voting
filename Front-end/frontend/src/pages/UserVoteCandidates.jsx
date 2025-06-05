@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ethers } from "ethers";
-import VotingInfo from "../contracts/VotingInfo.json";
+import { getContract, getSigner } from "../ethers";
 
 export default function ElectionCandidates() {
   const { electionId } = useParams();
@@ -20,13 +19,13 @@ export default function ElectionCandidates() {
     const loadElectionAndCandidates = async () => {
       setLoading(true);
       try {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const contract = getContract(getSigner());
+        const provider = contract.provider;
         await provider.send("eth_requestAccounts", []);
         const signer = provider.getSigner();
         const account = await signer.getAddress();
         setCurrentAccount(account);
 
-        const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
         const details = await contract.getElectionDetails(Number(electionId));
         const electionData = {
           id: electionId,
@@ -74,11 +73,7 @@ export default function ElectionCandidates() {
     setMessage("");
     setLoading(true);
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      const signer = provider.getSigner();
-      const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, signer);
-
+      const contract = getContract(getSigner());
       const tx = await contract.vote(Number(electionId), selectedId);
       await tx.wait();
       setMessage("✅ Bạn đã bầu chọn thành công!");
@@ -161,8 +156,6 @@ export default function ElectionCandidates() {
                 <button
                   className="underline text-indigo-600 text-sm mb-3 hover:text-indigo-800"
                   onClick={() => navigate(`/user/vote/${electionId}/candidate/${c.id}`)}
-
-
                 >
                   Xem chi tiết
                 </button>

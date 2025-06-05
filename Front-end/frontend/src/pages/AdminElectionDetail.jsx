@@ -1,8 +1,6 @@
-// src/pages/ElectionDetail.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ethers } from "ethers";
-import VotingInfo from "../contracts/VotingInfo.json";
+import { getContract } from "../ethers";
 
 // Hàm xác định trạng thái và màu
 function getElectionStatus(e) {
@@ -24,11 +22,8 @@ export default function ElectionDetail() {
 
   const loadElection = async () => {
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
-
+      const contract = getContract();
       const detail = await contract.getElectionDetails(Number(electionId));
-      // Chú ý: detail[5] là isEnded (bool) trả về từ contract mới!
       const electionData = {
         id: Number(electionId),
         title: detail[0],
@@ -36,7 +31,7 @@ export default function ElectionDetail() {
         endTime: new Date(Number(detail[2]) * 1000),
         isActive: detail[3],
         candidateCount: Number(detail[4]),
-        isEnded: detail[5], // <- lấy thêm trường này
+        isEnded: detail[5],
       };
 
       // Load all candidates for this election
@@ -50,7 +45,6 @@ export default function ElectionDetail() {
           achievements: res[3],
           image: res[4],
           voteCount: res[5].toNumber ? res[5].toNumber() : Number(res[5]),
-          // Nếu muốn ẩn ứng viên, thêm trường isActive (tuỳ contract)
           isActive: res[6] !== undefined ? res[6] : true,
         });
       }

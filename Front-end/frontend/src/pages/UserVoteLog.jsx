@@ -1,7 +1,5 @@
-// src/pages/VoteLog.jsx
 import React, { useEffect, useState } from "react";
-import { ethers } from "ethers";
-import VotingInfo from "../contracts/VotingInfo.json";
+import { getContract } from "../ethers";
 
 // Helper export CSV
 function exportCSV(data, filename = "vote_log.csv") {
@@ -28,14 +26,13 @@ export default function VoteLog() {
   const [search, setSearch] = useState("");
   const [err, setErr] = useState("");
 
-  // Load danh sách kỳ bầu cử
+  // Lấy tất cả các kỳ bầu cử (KHÔNG lọc active)
   useEffect(() => {
     async function fetchElections() {
       setLoading(true);
       setErr("");
       try {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
+        const contract = getContract();
         const data = await contract.getAllElectionDetails();
         const list = [];
         for (let i = 0; i < data[0].length; i++) {
@@ -60,19 +57,12 @@ export default function VoteLog() {
       setLoading(true);
       setErr("");
       try {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
-
-        // Fetch VoteCast events của electionId này
-        // Lưu ý: phải có event VoteCast trong contract!
+        const contract = getContract();
         const filter = contract.filters.VoteCast(Number(selectedElection));
         const events = await contract.queryFilter(filter, 0, "latest");
-        
-        // Lấy tên kỳ bầu cử & số lượng candidate
         const electionTitle = elections.find(e => Number(e.id) === Number(selectedElection))?.title || "";
         const electionDetail = await contract.getElectionDetails(Number(selectedElection));
         const candidateCount = Number(electionDetail[4]);
-        // Map candidateId -> tên ứng viên
         const candidateMap = {};
         for (let i = 0; i < candidateCount; i++) {
           const c = await contract.getCandidate(Number(selectedElection), i);
@@ -95,7 +85,6 @@ export default function VoteLog() {
       setLoading(false);
     }
     fetchLogs();
-    // eslint-disable-next-line
   }, [selectedElection, elections]);
 
   // Filter

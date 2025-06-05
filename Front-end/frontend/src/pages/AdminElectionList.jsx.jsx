@@ -1,8 +1,6 @@
-// src/pages/ElectionList.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ethers } from "ethers";
-import VotingInfo from "../contracts/VotingInfo.json";
+import { getContract } from "../ethers"; // Sử dụng ethers.js
 
 // Hàm xác định trạng thái kỳ bầu cử
 function getElectionStatus(election) {
@@ -15,7 +13,6 @@ function getElectionStatus(election) {
   return { label: "⏸️ Tạm dừng", className: "text-yellow-600 font-semibold" };
 }
 
-
 export default function ElectionList() {
   const [elections, setElections] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,9 +20,7 @@ export default function ElectionList() {
 
   const loadElections = async () => {
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
-
+      const contract = getContract();
       const data = await contract.getAllElectionDetails();
 
       const results = [];

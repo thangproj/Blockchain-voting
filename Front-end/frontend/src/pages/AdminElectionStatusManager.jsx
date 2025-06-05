@@ -1,7 +1,5 @@
-// src/pages/ElectionStatusManager.jsx
 import React, { useEffect, useState } from "react";
-import { ethers } from "ethers";
-import VotingInfo from "../contracts/VotingInfo.json";
+import { getContract, getSigner } from "../ethers"; // Dùng ethers.js
 
 export default function ElectionStatusManager() {
   const [elections, setElections] = useState([]);
@@ -15,10 +13,7 @@ export default function ElectionStatusManager() {
     try {
       if (!window.ethereum) return alert("Vui lòng cài MetaMask!");
 
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, provider);
-
+      const contract = getContract();
       const data = await contract.getAllElectionDetails();
       const results = [];
       for (let i = 0; i < data[0].length; i++) {
@@ -29,7 +24,7 @@ export default function ElectionStatusManager() {
           end: new Date(Number(data[2][i]) * 1000),
           isActive: data[3][i],
           candidateCount: Number(data[4][i]),
-          isEnded: data[5][i], // <-- lấy biến này!
+          isEnded: data[5][i],
         });
       }
       setElections(results);
@@ -45,10 +40,13 @@ export default function ElectionStatusManager() {
     setLoading(true);
     setMessage("");
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      const signer = provider.getSigner();
-      const contract = new ethers.Contract(VotingInfo.address, VotingInfo.abi, signer);
+      const contract = getContract(getSigner());
+      const provider = contract.provider;
+      const { chainId } = await provider.getNetwork();
+      if (chainId !== 11155111) {
+        setLoading(false);
+        return alert("❌ Vui lòng chuyển MetaMask sang mạng Sepolia.");
+      }
 
       const tx = await contract.toggleElectionActive(id);
       await tx.wait();
@@ -64,6 +62,7 @@ export default function ElectionStatusManager() {
 
   useEffect(() => {
     fetchElections();
+    // eslint-disable-next-line
   }, []);
 
   return (
@@ -97,7 +96,6 @@ export default function ElectionStatusManager() {
                 </tr>
               ) : (
                 elections.map((e) => {
-                  const now = new Date();
                   const ended = e.isEnded;
                   return (
                     <tr key={e.id} className="hover:bg-gray-50 transition">

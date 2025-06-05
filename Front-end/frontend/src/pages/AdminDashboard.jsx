@@ -1,8 +1,17 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useCheckAdmin } from "../hooks/useCheckAdmin";
 
 export default function AdminDashboard() {
+  const isAdmin = useCheckAdmin();
   const navigate = useNavigate();
+
+  // Dùng useEffect để chuyển hướng nếu không phải admin
+  useEffect(() => {
+    if (isAdmin === false) {
+      navigate("/");
+    }
+  }, [isAdmin, navigate]);
 
   const sections = [
     {
@@ -21,7 +30,6 @@ export default function AdminDashboard() {
         { label: "Xem danh sách ứng viên của các kỳ", path: "/admin/all-candidates" },
         { label: "Cập nhật thông tin ứng viên", path: "/admin/edit-candidate" },
         { label: "Ẩn / Vô hiệu hóa ứng viên", path: "/admin/deactivate-candidate" },
-
       ],
     },
     {
@@ -35,10 +43,13 @@ export default function AdminDashboard() {
     },
   ];
 
+  // Chỉ hiển thị khi đã xác nhận là admin (isAdmin === true)
+  if (isAdmin === null) return <div>Đang kiểm tra quyền truy cập...</div>;
+  // Nếu không phải admin, useEffect sẽ tự động chuyển hướng, không cần return gì nữa
+
   return (
     <div className="max-w-5xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6 text-center">🛠️ Admin Dashboard</h1>
-
       {sections.map((section, i) => (
         <div key={i} className="mb-8">
           <h2 className="text-xl font-semibold mb-4 text-blue-700">{section.title}</h2>
